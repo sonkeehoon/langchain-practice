@@ -20,18 +20,22 @@ if st.button("Summarize"):
         st.write(f"Please provide the missing fields.")
     else:
         try:
-            # Save uploaded file temporarily to disk, load and split the file into pages, delete temp file
+            # 업로드된 PDF 파일을 임시 파일로 저장
             with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
                 tmp_file.write(source_doc.read())
+            
+            # 임시파일을 PyPDFLoader로 로드하고 페이지단위로 분할함
             loader = PyPDFLoader(tmp_file.name)
             pages = loader.load_and_split()
+            
+            # 임시로 저장된 파일을 삭제하여 공간을 정리
             os.remove(tmp_file.name)
 
-            # Create embeddings for the pages and insert into Chroma database
+            # 페이지별로 임베딩 생성, 벡터 DB에 저장
             embeddings=OpenAIEmbeddings(openai_api_key=openai_api_key)
             vectordb = Chroma.from_documents(pages, embeddings)
 
-            # Initialize the OpenAI module, load and run the summarize chain
+            # ChatOpenAI 인스턴스를 생성하고 모델명은 gpt-4o-mini로 지정
             llm=ChatOpenAI(temperature=0, openai_api_key=openai_api_key, verbose=True, model_name = 'gpt-4o-mini')
             chain = load_summarize_chain(llm, chain_type="stuff")
             search = vectordb.similarity_search(" ")
